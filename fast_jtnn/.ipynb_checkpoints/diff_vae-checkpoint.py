@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*- 
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -96,12 +98,13 @@ class DiffVAE(nn.Module):
         #둘의 dif vector를 구하는 과정, z를 구하고 바로 kl_div를 구함
         
         word_loss, topo_loss, word_acc, topo_acc = self.decoder(y_batch, x_tree_vecs, x_mol_vecs)
-        #word_loss
+        #label pred loss, topological pred loss, label pred acc, topological pred acc 
         
-        assm_loss, assm_acc = self.assm(y_batch, y_jtmpn_holder, x_mol_vecs, y_tree_mess)
+        assm_loss, assm_acc = self.assm(y_batch, y_jtmpn_holder, x_mol_vecs, y_tree_mess) # L_g(G)
 
         return word_loss + topo_loss + assm_loss + beta * kl_div, kl_div.item(), word_acc, topo_acc, assm_acc
-
+    
+    #3.3 Graph Decoder에 해당하는 부분
     def assm(self, mol_batch, jtmpn_holder, x_mol_vecs, y_tree_mess):
         jtmpn_holder,batch_idx = jtmpn_holder
         fatoms,fbonds,agraph,bgraph,scope = jtmpn_holder

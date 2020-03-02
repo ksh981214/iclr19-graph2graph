@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*- 
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -14,6 +16,34 @@ import cPickle as pickle
 from fast_jtnn import *
 import rdkit
 
+from datetime import datetime
+from matplotlib import pyplot as plt
+import os # for save plot
+
+def save_KL_plt(save_dir, epoch, x, kl):
+    plt.plot(x, kl)
+    plt.xlabel('Iteration')
+    plt.ylabel('KL divergence')
+    plt.savefig('./plot/{}/KL/epoch_{}.png'.format(str(save_dir),str(epoch)))
+    plt.close()
+def save_Acc_plt(save_dir, epoch, x, word, topo, assm):
+    plt.plot(x, word)
+    plt.plot(x, topo)
+    plt.plot(x, assm)
+    plt.xlabel('Iteration')
+    plt.ylabel('Acc')
+    plt.legend(['Word acc','Topo acc','Assm acc'])
+    plt.savefig('./plot/{}/Acc/epoch_{}.png'.format(str(save_dir),str(epoch)))
+    plt.close()
+def save_Norm_plt(save_dir, epoch, x, pnorm, gnorm):
+    plt.plot(x, pnorm)
+    plt.plot(x, gnorm)
+    plt.xlabel('Iteration')
+    plt.ylabel('Norm')
+    plt.legend(['Pnorm', 'Gnorm'])
+    plt.savefig('./plot/{}/Norm/epoch_{}.png'.format(str(save_dir),str(epoch)))
+    plt.close()
+    
 lg = rdkit.RDLogger.logger() 
 lg.setLevel(rdkit.RDLogger.CRITICAL)
 
@@ -64,7 +94,23 @@ PRINT_ITER = 20
 param_norm = lambda m: math.sqrt(sum([p.norm().item() ** 2 for p in m.parameters()]))
 grad_norm = lambda m: math.sqrt(sum([p.grad.norm().item() ** 2 for p in m.parameters() if p.grad is not None]))
 
-for epoch in xrange(args.load_epoch + 1, args.epoch):
+folder_name = datetime.now()
+os.makedirs('./plot/'+str(folder_name)+'/KL')
+os.makedirs('./plot/'+str(folder_name)+'/Acc')
+os.makedirs('./plot/'+str(folder_name)+'/Norm')
+#Plot
+x_plot=[]
+kl_plot=[]
+word_plot=[]
+topo_plot=[]
+assm_plot=[]
+pnorm_plot=[]
+gnorm_plot=[]
+
+for epoch in xrange(args.load_epoch + 1, args.epoch):    
+    start = datetime.now()
+    print("EPOCH {} | {}".format(epoch+1, start))
+    
     loader = PairTreeFolder(args.train, vocab, args.batch_size, num_workers=4)
     meters = np.zeros(4)
 
@@ -82,15 +128,47 @@ for epoch in xrange(args.load_epoch + 1, args.epoch):
         optimizer.step()
 
         meters = meters + np.array([kl_div, wacc * 100, tacc * 100, sacc * 100])
-
+        '''
+            KL_div: prior distribution p(z)와 Q(z|X,Y)와의 KL div
+            Word: Label Prediction acc
+            Topo: Topological Prediction acc
+            Assm: 조립할 때, 정답과 똑같이 했는가? acc
+        '''
+        
+        #Plot
+        x_plot.append(int(it))
+        kl_plot.append(kl_div)
+        word_plot.append(wacc * 100)
+        topo_plot.append(tacc * 100)
+        assm_plot.append(sacc * 100)
+        
+        pnorm= param_norm(model)
+        pnorm_plot.append(pnorm)
+        gnorm = grad_norm(model)
+        gnorm_plot.append(gnorm)
+        
         if (it + 1) % PRINT_ITER == 0:
             meters /= PRINT_ITER
-            print "KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f" % (meters[0], meters[1], meters[2], meters[3], param_norm(model), grad_norm(model))
+            print "KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f" % (meters[0], meters[1], meters[2], meters[3], pnorm, gnorm)
             sys.stdout.flush()
             meters *= 0
+            break
 
     scheduler.step()
-
+    
+    #Plot per 1 epoch
+    print("Cosume Time per Epoch {}".format(datetime.now()-start))
+    save_KL_plt(folder_name, epoch, x_plot, kl_plot)
+    save_Acc_plt(folder_name, epoch, x_plot, word_plot, topo_plot, assm_plot)
+    save_Norm_plt(folder_name, epoch, x_plot, pnorm_plot, gnorm_plot)
+    x_plot=[]
+    kl_plot=[]
+    word_plot=[]
+    topo_plot=[]
+    assm_plot=[]
+    pnorm_plot=[]
+    gnorm_plot=[]
+    
     print "learning rate: %.6f" % scheduler.get_lr()[0]
     if args.save_dir is not None:
         torch.save(model.state_dict(), args.save_dir + "/model.iter-" + str(epoch))
