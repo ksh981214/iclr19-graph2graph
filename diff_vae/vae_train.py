@@ -18,7 +18,7 @@ import rdkit
 
 from datetime import datetime
 import matplotlib
-matplotlib.use('agg')
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import os # for save plot
 
@@ -111,7 +111,7 @@ gnorm_plot=[]
 
 for epoch in xrange(args.load_epoch + 1, args.epoch):    
     start = datetime.now()
-    print("EPOCH {} | {}".format(epoch+1, start))
+    print("EPOCH: %d | TIME: %s " % (epoch+1, str(start)))
     
     loader = PairTreeFolder(args.train, vocab, args.batch_size, num_workers=4)
     meters = np.zeros(4)
@@ -149,17 +149,15 @@ for epoch in xrange(args.load_epoch + 1, args.epoch):
         gnorm = grad_norm(model)
         gnorm_plot.append(gnorm)
         
+        #print(it)
         if (it + 1) % PRINT_ITER == 0:
             meters /= PRINT_ITER
-            print "KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f" % (meters[0], meters[1], meters[2], meters[3], pnorm, gnorm)
+            print "KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f, iter: %d " % (meters[0], meters[1], meters[2], meters[3], pnorm, gnorm, it+1)
             sys.stdout.flush()
             meters *= 0
-            break
-
-    scheduler.step()
-    
+            
     #Plot per 1 epoch
-    print("Cosume Time per Epoch {}".format(datetime.now()-start))
+    print "Cosume Time per Epoch %s" % (str(datetime.now()-start))
     save_KL_plt(folder_name, epoch, x_plot, kl_plot)
     save_Acc_plt(folder_name, epoch, x_plot, word_plot, topo_plot, assm_plot)
     save_Norm_plt(folder_name, epoch, x_plot, pnorm_plot, gnorm_plot)
@@ -170,6 +168,8 @@ for epoch in xrange(args.load_epoch + 1, args.epoch):
     assm_plot=[]
     pnorm_plot=[]
     gnorm_plot=[]
+    
+    scheduler.step()
     
     print "learning rate: %.6f" % scheduler.get_lr()[0]
     if args.save_dir is not None:
