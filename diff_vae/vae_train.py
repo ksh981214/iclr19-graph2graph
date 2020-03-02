@@ -17,6 +17,8 @@ from fast_jtnn import *
 import rdkit
 
 from datetime import datetime
+import matplotlib
+matplotlib.use('agg')
 from matplotlib import pyplot as plt
 import os # for save plot
 
