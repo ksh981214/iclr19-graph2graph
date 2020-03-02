@@ -20,8 +20,8 @@ class JTNNEncoder(nn.Module):
         self.GRU = GraphGRU(hidden_size, hidden_size, depth=depth)
 
     def forward(self, fnode, fmess, node_graph, mess_graph, scope):
-        fnode = create_var(fnode) # 노드의 feature vector / atom type, valence, and other atomic properties 가짐
-        fmess = create_var(fmess) # 
+        fnode = create_var(fnode)
+        fmess = create_var(fmess)
         node_graph = create_var(node_graph)
         mess_graph = create_var(mess_graph)
         messages = create_var(torch.zeros(mess_graph.size(0), self.hidden_size))
