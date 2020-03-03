@@ -3,7 +3,7 @@
 DIR=$1
 NUM=$2
 
-for ((i=1; i<NUM; i++)); do
+for ((i=0; i<NUM; i++)); do
     f=$DIR/model.iter-$i
     if [ -e $f ]; then
         echo $f

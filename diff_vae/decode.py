@@ -38,7 +38,17 @@ vocab = [x.strip("\r\n ") for x in open(args.vocab)]
 vocab = Vocab(vocab)
 
 model = DiffVAE(vocab, args).cuda()
-model.load_state_dict(torch.load(args.model))
+
+# For solving the RuntimeError: Error(s) in loading state_dict for DiffVAE: Unexpected key(s) in state_dict: "embedding.weight".
+state_dict = torch.load(args.model)
+
+from collections import OrderedDict
+new_state_dict = OrderedDict()
+for k,v in state_dict.items():
+    name = k[7:] #remove 'module'
+    new_state_dict[name] = v
+
+model.load_state_dict(new_state_dict)
 
 with open(args.test) as f:
     data = [line.split()[0] for line in f]
@@ -49,12 +59,14 @@ dataset = MolTreeDataset(batches, vocab, assm=False)
 loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0, collate_fn=lambda x:x[0])
 
 torch.manual_seed(args.seed)
-for batch in loader:
+for (i,batch) in enumerate(loader):
+    print(i)
     mol_batch = batch[0]
     x_tree_vecs, _, x_mol_vecs = model.encode(batch[1], batch[2])
     assert x_tree_vecs.size(0) == x_mol_vecs.size(0)
 
     for k in xrange(args.num_decode):
+        print("in for loop ",k)
         z_tree_vecs, z_mol_vecs = model.fuse_noise(x_tree_vecs, x_mol_vecs)
         smiles = mol_batch[0].smiles
         new_smiles = model.decode(z_tree_vecs[0].unsqueeze(0), z_mol_vecs[0].unsqueeze(0))

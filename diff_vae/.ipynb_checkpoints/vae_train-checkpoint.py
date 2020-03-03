@@ -26,6 +26,7 @@ def save_KL_plt(save_dir, epoch, x, kl):
     plt.plot(x, kl)
     plt.xlabel('Iteration')
     plt.ylabel('KL divergence')
+    plt.grid()
     plt.savefig('./plot/{}/KL/epoch_{}.png'.format(str(save_dir),str(epoch)))
     plt.close()
 def save_Acc_plt(save_dir, epoch, x, word, topo, assm):
@@ -35,6 +36,7 @@ def save_Acc_plt(save_dir, epoch, x, word, topo, assm):
     plt.xlabel('Iteration')
     plt.ylabel('Acc')
     plt.legend(['Word acc','Topo acc','Assm acc'])
+    plt.grid()
     plt.savefig('./plot/{}/Acc/epoch_{}.png'.format(str(save_dir),str(epoch)))
     plt.close()
 def save_Norm_plt(save_dir, epoch, x, pnorm, gnorm):
@@ -43,6 +45,7 @@ def save_Norm_plt(save_dir, epoch, x, pnorm, gnorm):
     plt.xlabel('Iteration')
     plt.ylabel('Norm')
     plt.legend(['Pnorm', 'Gnorm'])
+    plt.grid()
     plt.savefig('./plot/{}/Norm/epoch_{}.png'.format(str(save_dir),str(epoch)))
     plt.close()
     
@@ -83,6 +86,7 @@ for param in model.parameters():
     else:
         nn.init.xavier_normal_(param)
 
+#기존 모델 가져와서 학습하려면 이거 쓰면될 듯
 if args.load_epoch >= 0:
     model.load_state_dict(torch.load(args.save_dir + "/model.iter-" + str(args.load_epoch)))
 
@@ -96,10 +100,11 @@ PRINT_ITER = 20
 param_norm = lambda m: math.sqrt(sum([p.norm().item() ** 2 for p in m.parameters()]))
 grad_norm = lambda m: math.sqrt(sum([p.grad.norm().item() ** 2 for p in m.parameters() if p.grad is not None]))
 
-folder_name = datetime.now()
-os.makedirs('./plot/'+str(folder_name)+'/KL')
-os.makedirs('./plot/'+str(folder_name)+'/Acc')
-os.makedirs('./plot/'+str(folder_name)+'/Norm')
+folder_name = str(datetime.now()) +'_'+ args.save_dir.split('/')[-1]
+os.makedirs('./plot/'+folder_name+'/KL')
+os.makedirs('./plot/'+folder_name+'/Acc')
+os.makedirs('./plot/'+folder_name+'/Norm')
+print("...Finish Making Plot Folder...")
 #Plot
 x_plot=[]
 kl_plot=[]
@@ -138,23 +143,38 @@ for epoch in xrange(args.load_epoch + 1, args.epoch):
         '''
         
         #Plot
-        x_plot.append(int(it))
-        kl_plot.append(kl_div)
-        word_plot.append(wacc * 100)
-        topo_plot.append(tacc * 100)
-        assm_plot.append(sacc * 100)
+#         x_plot.append(int(it))
+#         kl_plot.append(kl_div)
+#         word_plot.append(wacc * 100)
+#         topo_plot.append(tacc * 100)
+#         assm_plot.append(sacc * 100)
         
-        pnorm= param_norm(model)
-        pnorm_plot.append(pnorm)
-        gnorm = grad_norm(model)
-        gnorm_plot.append(gnorm)
+#         pnorm= param_norm(model)
+#         pnorm_plot.append(pnorm)
+#         gnorm = grad_norm(model)
+#         gnorm_plot.append(gnorm)
         
         #print(it)
         if (it + 1) % PRINT_ITER == 0:
             meters /= PRINT_ITER
+            
+            pnorm= param_norm(model)
+            gnorm = grad_norm(model)
+            
             print "KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f, iter: %d " % (meters[0], meters[1], meters[2], meters[3], pnorm, gnorm, it+1)
+            
+            x_plot.append(it+1)
+            kl_plot.append(meters[0])
+            word_plot.append(meters[1])
+            topo_plot.append(meters[2])
+            assm_plot.append(meters[3])
+            pnorm_plot.append(pnorm)
+            gnorm_plot.append(gnorm)
+            
             sys.stdout.flush()
             meters *= 0
+#         if (it+1) == 40:
+#             break
             
     #Plot per 1 epoch
     print "Cosume Time per Epoch %s" % (str(datetime.now()-start))

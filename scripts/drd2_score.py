@@ -1,8 +1,11 @@
 import sys
 from props import *
 
+import pdb
+
 for line in sys.stdin:
     x,y = line.split()
+    
     if y == "None": y = None
     sim2D = similarity(x, y)
     try:
